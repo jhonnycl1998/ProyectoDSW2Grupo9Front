@@ -1,0 +1,207 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Historial de Ventas</h1>
+      <p class="page-subtitle">Registro de transacciones, detalle de productos y gestión de anulaciones</p>
+    </div>
+    <a routerLink="/ventas/nueva" class="btn-primary">
+      <span>🛒</span> Nueva Venta
+    </a>
+  </div>
+
+  <!-- Toast Messages -->
+  <div class="toast-success" *ngIf="successMessage">
+    <span>✅</span> {{ successMessage }}
+  </div>
+
+  <div class="toast-error" *ngIf="errorMessage">
+    <span>⚠️</span> {{ errorMessage }}
+  </div>
+
+  <!-- Filters & Toolbar -->
+  <div class="toolbar-card">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (input)="aplicarFiltros()"
+        placeholder="Filtrar por # ID o vendedor..."
+      />
+    </div>
+
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+        <option value="TODOS">Todos los estados</option>
+        <option value="CONFIRMADA">Confirmadas</option>
+        <option value="ANULADA">Anuladas</option>
+      </select>
+    </div>
+
+    <div class="info-stats">
+      Total: <strong>{{ ventasFiltradas.length }}</strong> transacciones
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">
+      <span class="spinner-large">⏳</span>
+      <p>Cargando transacciones de venta...</p>
+    </div>
+
+    <table *ngIf="!isLoading && ventasFiltradas.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha y Hora</th>
+          <th>Vendedor</th>
+          <th>Productos</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let venta of ventasFiltradas">
+          <td class="col-id">#{{ venta.idVenta }}</td>
+          <td>
+            <div class="date-time">
+              <span>📅 {{ venta.fecha | date:'dd/MM/yyyy' }}</span>
+              <small class="text-muted">🕒 {{ venta.fecha | date:'HH:mm:ss' }}</small>
+            </div>
+          </td>
+          <td>
+            <span class="user-badge">👤 {{ venta.username }}</span>
+          </td>
+          <td>
+            <span class="items-count">
+              {{ venta.detalles?.length || 0 }} producto(s)
+            </span>
+          </td>
+          <td class="col-price">
+            S/ {{ venta.total | number:'1.2-2' }}
+          </td>
+          <td>
+            <span 
+              class="status-badge"
+              [class.status-confirmed]="(venta.estado || 'CONFIRMADA') === 'CONFIRMADA'"
+              [class.status-cancelled]="venta.estado === 'ANULADA'"
+            >
+              {{ venta.estado === 'ANULADA' ? '🔴 ANULADA' : '🟢 CONFIRMADA' }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <button 
+              class="btn-icon btn-view" 
+              (click)="abrirDetalle(venta)" 
+              title="Ver Detalle"
+            >
+              👁️ Detalle
+            </button>
+            <button 
+              *ngIf="venta.estado !== 'ANULADA'"
+              class="btn-icon btn-anular" 
+              (click)="confirmarAnular(venta)" 
+              title="Anular Venta"
+            >
+              🚫 Anular
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!isLoading && ventasFiltradas.length === 0" class="empty-state">
+      <div class="empty-icon">🧾</div>
+      <h3>No se encontraron registros de ventas</h3>
+      <p>Haga clic en "Nueva Venta" para registrar una nueva transacción en el sistema.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle de Venta -->
+<div class="modal-backdrop" *ngIf="showDetailModal && selectedVenta">
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <div>
+        <h3>🧾 Detalle de Venta #{{ selectedVenta.idVenta }}</h3>
+        <p class="modal-subtitle">
+          Registrada por <strong>{{ selectedVenta.username }}</strong> el {{ selectedVenta.fecha | date:'dd/MM/yyyy HH:mm:ss' }}
+        </p>
+      </div>
+      <button class="btn-close" (click)="cerrarDetalle()">✖</button>
+    </div>
+
+    <div class="detail-status-banner" [class.banner-anulada]="selectedVenta.estado === 'ANULADA'">
+      Estado: <strong>{{ selectedVenta.estado || 'CONFIRMADA' }}</strong>
+    </div>
+
+    <div class="table-container-detail">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-right">Precio Unitario</th>
+            <th class="text-right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let det of selectedVenta.detalles">
+            <td>
+              <strong>{{ det.nombreProducto || ('Producto #' + det.idProducto) }}</strong>
+            </td>
+            <td class="text-center">{{ det.cantidad }}</td>
+            <td class="text-right">S/ {{ det.precioUnitario | number:'1.2-2' }}</td>
+            <td class="text-right subtotal-cell">S/ {{ det.subtotal | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="text-right total-label">TOTAL GENERAL:</td>
+            <td class="text-right total-amount">S/ {{ selectedVenta.total | number:'1.2-2' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      <button 
+        *ngIf="selectedVenta.estado !== 'ANULADA'"
+        type="button" 
+        class="btn-danger" 
+        (click)="confirmarAnular(selectedVenta); cerrarDetalle()"
+      >
+        🚫 Anular esta Venta
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Anulación -->
+<div class="modal-backdrop" *ngIf="showAnularModal && ventaToAnular">
+  <div class="modal-card modal-sm">
+    <div class="modal-header">
+      <h3 class="text-danger">⚠️ Confirmar Anulación</h3>
+      <button class="btn-close" (click)="cancelarAnular()">✖</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de que desea anular la <strong>Venta #{{ ventaToAnular.idVenta }}</strong> por el monto de <strong>S/ {{ ventaToAnular.total | number:'1.2-2' }}</strong>?</p>
+      <div class="anular-notice">
+        <span>🔄</span> El inventario de los productos asociados se reintegrará automáticamente al stock.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cancelarAnular()" [disabled]="anularLoading">
+        Cancelar
+      </button>
+      <button type="button" class="btn-danger" (click)="ejecutarAnulacion()" [disabled]="anularLoading">
+        {{ anularLoading ? 'Anulando...' : 'Confirmar Anulación' }}
+      </button>
+    </div>
+  </div>
+</div>

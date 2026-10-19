@@ -1,0 +1,212 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Catálogo de Productos</h1>
+      <p class="page-subtitle">Gestión e inventario en tiempo real</p>
+    </div>
+    <button 
+      *ngIf="authService.isAdmin()" 
+      class="btn-primary" 
+      (click)="abrirModalNuevo()"
+    >
+      <span>➕</span> Nuevo Producto
+    </button>
+  </div>
+
+  <!-- Toast Message -->
+  <div class="toast-success" *ngIf="successMessage">
+    <span>✅</span> {{ successMessage }}
+  </div>
+
+  <div class="toast-error" *ngIf="errorMessage">
+    <span>⚠️</span> {{ errorMessage }}
+  </div>
+
+  <!-- Filters & Toolbar -->
+  <div class="toolbar-card">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (keyup.enter)="onSearch()"
+        placeholder="Buscar por nombre de producto..."
+      />
+      <button class="btn-search" (click)="onSearch()">Buscar</button>
+    </div>
+    <div class="info-stats">
+      Total: <strong>{{ productos.length }}</strong> productos
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">
+      <span class="spinner-large">⏳</span>
+      <p>Cargando lista de productos...</p>
+    </div>
+
+    <table *ngIf="!isLoading && productos.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre del Producto</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th *ngIf="authService.isAdmin()" class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let prod of productos">
+          <td class="col-id">#{{ prod.idProducto }}</td>
+          <td class="col-name">
+            <strong>{{ prod.nombre }}</strong>
+          </td>
+          <td>
+            <span class="category-badge">
+              📁 {{ prod.nombreCategoria || 'Sin categoría' }}
+            </span>
+          </td>
+          <td class="col-price">
+            S/ {{ prod.precio | number:'1.2-2' }}
+          </td>
+          <td class="col-stock">
+            {{ prod.stock }} unidades
+          </td>
+          <td>
+            <span 
+              class="stock-badge" 
+              [class.stock-ok]="prod.stock > 5"
+              [class.stock-low]="prod.stock >= 1 && prod.stock <= 5"
+              [class.stock-out]="prod.stock === 0"
+            >
+              {{ prod.stock > 5 ? '🟢 Disponible' : (prod.stock >= 1 ? '🟡 Stock Bajo' : '🔴 Agotado') }}
+            </span>
+          </td>
+          <td *ngIf="authService.isAdmin()" class="text-right col-actions">
+            <button class="btn-icon btn-edit" (click)="abrirModalEditar(prod)" title="Editar">
+              ✏️
+            </button>
+            <button class="btn-icon btn-delete" (click)="confirmarEliminar(prod)" title="Eliminar">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!isLoading && productos.length === 0" class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>No se encontraron productos</h3>
+      <p>Intente modificar el término de búsqueda o registre un nuevo producto.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Registro / Edición -->
+<div class="modal-backdrop" *ngIf="showModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>{{ isEditMode ? '✏️ Editar Producto' : '➕ Nuevo Producto' }}</h3>
+      <button class="btn-close" (click)="cerrarModal()">✖</button>
+    </div>
+
+    <form (ngSubmit)="guardarProducto()" class="modal-form">
+      <div class="alert-error" *ngIf="formError">
+        <span>⚠️</span> {{ formError }}
+      </div>
+
+      <div class="form-group">
+        <label for="prodCodigo">Código *</label>
+        <input type="text" id="prodCodigo" [(ngModel)]="formCodigo" name="formCodigo" maxlength="30" required />
+      </div>
+
+      <div class="form-group">
+        <label for="prodNombre">Nombre del Producto *</label>
+        <input 
+          type="text" 
+          id="prodNombre" 
+          [(ngModel)]="formNombre" 
+          name="formNombre"
+          placeholder="Ej: Teclado Mecánico RGB" 
+          required
+          maxlength="100"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label for="prodPrecio">Precio (S/) *</label>
+          <input 
+            type="number" 
+            id="prodPrecio" 
+            [(ngModel)]="formPrecio" 
+            name="formPrecio"
+            step="0.01" 
+            min="0.01"
+            placeholder="0.00" 
+            required
+          />
+        </div>
+
+        <div class="form-group flex-1">
+          <label for="prodStock">Stock *</label>
+          <input 
+            type="number" 
+            id="prodStock" 
+            [(ngModel)]="formStock" 
+            name="formStock"
+            min="0"
+            step="1"
+            max="2147483647"
+            placeholder="0" 
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="prodCategoria">Categoría *</label>
+        <select 
+          id="prodCategoria" 
+          [(ngModel)]="formCategoriaId" 
+          name="formCategoriaId"
+          required
+        >
+          <option [ngValue]="null" disabled>-- Seleccione Categoría --</option>
+          <option *ngFor="let cat of categorias" [ngValue]="cat.idCategoria">
+            {{ cat.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary">
+          {{ isEditMode ? 'Guardar Cambios' : 'Registrar Producto' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal-backdrop" *ngIf="showDeleteModal">
+  <div class="modal-card modal-sm">
+    <div class="modal-header">
+      <h3 class="text-danger">⚠️ Confirmar Eliminación</h3>
+      <button class="btn-close" (click)="cancelarEliminar()">✖</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de que desea eliminar el producto <strong>{{ productoToDelete?.nombre }}</strong>?</p>
+      <p class="text-muted">Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cancelarEliminar()">Cancelar</button>
+      <button type="button" class="btn-danger" (click)="eliminarProducto()">Eliminar</button>
+    </div>
+  </div>
+</div>

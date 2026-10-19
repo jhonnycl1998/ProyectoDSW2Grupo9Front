@@ -1,0 +1,38 @@
+<nav class="navbar" *ngIf="authService.isLoggedIn()">
+  <div class="navbar-container">
+    <div class="navbar-brand">
+      <div class="logo-icon">📦</div>
+      <span class="brand-title">Almacén<span class="brand-accent">Hub</span></span>
+    </div>
+
+    <div class="navbar-links">
+      <a routerLink="/productos" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🏷️</span> Productos
+      </a>
+      <a routerLink="/categorias" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📁</span> Categorías
+      </a>
+      <a routerLink="/ventas" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🛒</span> Ventas
+      </a>
+      <a *ngIf="authService.isAdmin()" routerLink="/usuarios" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">👥</span> Usuarios
+      </a>
+      <a *ngIf="authService.isAdmin()" routerLink="/roles" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🛡️</span> Roles
+      </a>
+    </div>
+
+    <div class="navbar-user" *ngIf="authService.currentUser() as user">
+      <div class="user-info">
+        <span class="username">{{ user.username }}</span>
+        <span class="badge-role" [class.role-admin]="authService.isAdmin()">
+          {{ user.rol }}
+        </span>
+      </div>
+      <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
+        🚪 Salir
+      </button>
+    </div>
+  </div>
+</nav>

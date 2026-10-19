@@ -1,0 +1,43 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-scroll .data-table {
+  min-width: 780px;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.modal-usuario {
+  max-width: 620px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-group select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.modal-usuario .modal-form {
+  gap: 0;
+}
+
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

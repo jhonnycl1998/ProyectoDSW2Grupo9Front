@@ -1,0 +1,66 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="card-header">
+      <div class="brand-badge">
+        <span class="icon">📦</span>
+      </div>
+      <h2>Bienvenido al Sistema</h2>
+      <p class="subtitle">Ingrese sus credenciales para acceder al Almacén</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="login-form">
+      <div class="alert-error" *ngIf="errorMessage">
+        <span>⚠️</span> {{ errorMessage }}
+      </div>
+
+      <div class="form-group">
+        <label for="username">Usuario</label>
+        <div class="input-wrapper">
+          <span class="input-icon">👤</span>
+          <input 
+            type="text" 
+            id="username" 
+            name="username"
+            [(ngModel)]="username" 
+            placeholder="Ej: admin"
+            required
+            autocomplete="username"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input 
+            type="password" 
+            id="password" 
+            name="password"
+            [(ngModel)]="password" 
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Iniciar Sesión</span>
+        <span *ngIf="isLoading" class="spinner">⏳ Validando...</span>
+      </button>
+    </form>
+
+    <div class="demo-credentials">
+      <p class="demo-title">Credenciales Rápidas de Prueba:</p>
+      <div class="demo-buttons">
+        <button type="button" class="btn-demo admin" (click)="fillDemo('admin', 'cibertec')">
+          🛡️ Admin (admin)
+        </button>
+        <button type="button" class="btn-demo user" (click)="fillDemo('vendedor', 'cibertec')">
+          👤 Vendedor (vendedor)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,121 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Usuarios</h1>
+      <p class="page-subtitle">Administración de usuarios y permisos</p>
+    </div>
+    <button class="btn-primary" type="button" (click)="abrirModalNuevo()" [disabled]="roles.length === 0">
+      <span>➕</span> Nuevo Usuario
+    </button>
+  </div>
+
+  <div *ngIf="successMessage" class="toast-success">✅ {{ successMessage }}</div>
+  <div *ngIf="errorMessage" class="toast-error">⚠️ {{ errorMessage }}</div>
+
+  <div class="table-card table-scroll">
+    <div *ngIf="isLoading" class="loading-state">Cargando usuarios...</div>
+    <table *ngIf="!isLoading && usuarios.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Usuario</th>
+          <th>Nombres y apellidos</th>
+          <th>DNI</th>
+          <th>Rol</th>
+          <th>Correo</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let usuario of usuarios">
+          <td class="col-id">#{{ usuario.idUsuario }}</td>
+          <td><strong>{{ usuario.username }}</strong></td>
+          <td>{{ usuario.persona.nombres }} {{ usuario.persona.apellidos }}</td>
+          <td>{{ usuario.persona.dni }}</td>
+          <td><span class="badge-type badge-system">{{ usuario.nombreRol }}</span></td>
+          <td>{{ usuario.persona.correo || '—' }}</td>
+          <td class="col-actions">
+            <button type="button" class="btn-icon btn-edit" title="Editar" (click)="abrirModalEditar(usuario)">✏️</button>
+            <button type="button" class="btn-icon btn-delete" title="Desactivar" (click)="confirmarEliminar(usuario)" [disabled]="esUsuarioActual(usuario)">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="!isLoading && usuarios.length === 0" class="empty-state">
+      <div class="empty-icon">👤</div>
+      <h3>No hay usuarios activos</h3>
+      <p>Registre un usuario para empezar.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showModal">
+  <div class="modal-card modal-usuario" role="dialog" aria-modal="true" aria-labelledby="tituloUsuario">
+    <div class="modal-header">
+      <h3 id="tituloUsuario">{{ isEditMode ? '✏️ Editar Usuario' : '➕ Nuevo Usuario' }}</h3>
+      <button type="button" class="btn-close" (click)="cerrarModal()" title="Cerrar">✖</button>
+    </div>
+
+    <form class="modal-form" (ngSubmit)="guardarUsuario()">
+      <div *ngIf="formError" class="alert-error">⚠️ {{ formError }}</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="usuarioUsername">Usuario *</label>
+          <input id="usuarioUsername" name="username" [(ngModel)]="form.username" required maxlength="50" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioPassword">{{ isEditMode ? 'Nueva contraseña' : 'Contraseña *' }}</label>
+          <input id="usuarioPassword" name="password" [(ngModel)]="form.password" type="password" [required]="!isEditMode" minlength="6" maxlength="50" [placeholder]="isEditMode ? 'Dejar en blanco para conservar' : 'Mínimo 6 caracteres'" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioNombres">Nombres *</label>
+          <input id="usuarioNombres" name="nombres" [(ngModel)]="form.nombres" required maxlength="80" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioApellidos">Apellidos *</label>
+          <input id="usuarioApellidos" name="apellidos" [(ngModel)]="form.apellidos" required maxlength="80" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioDni">DNI *</label>
+          <input id="usuarioDni" name="dni" [(ngModel)]="form.dni" required maxlength="8" minlength="8" inputmode="numeric" pattern="[0-9]{8}" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioTelefono">Teléfono</label>
+          <input id="usuarioTelefono" name="telefono" [(ngModel)]="form.telefono" maxlength="15" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioCorreo">Correo</label>
+          <input id="usuarioCorreo" name="correo" [(ngModel)]="form.correo" type="email" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label for="usuarioRol">Rol *</label>
+          <select id="usuarioRol" name="idRol" [(ngModel)]="form.idRol" required>
+            <option [ngValue]="null" disabled>Seleccione un rol</option>
+            <option *ngFor="let rol of roles" [ngValue]="rol.idRol">{{ rol.nombre }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="isSaving">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="isSaving">{{ isSaving ? 'Guardando...' : (isEditMode ? 'Guardar cambios' : 'Registrar usuario') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showDeleteModal">
+  <div class="modal-card modal-sm" role="dialog" aria-modal="true" aria-labelledby="tituloDesactivarUsuario">
+    <div class="modal-header">
+      <h3 id="tituloDesactivarUsuario">⚠️ Desactivar Usuario</h3>
+      <button class="btn-close" type="button" (click)="cancelarEliminar()">✖</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Desea desactivar al usuario <strong>{{ usuarioToDelete?.username }}</strong>?</p>
+      <p class="text-muted">El usuario dejará de aparecer en la lista y no podrá iniciar sesión.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cancelarEliminar()" [disabled]="isSaving">Cancelar</button>
+      <button type="button" class="btn-danger" (click)="eliminarUsuario()" [disabled]="isSaving">Desactivar</button>
+    </div>
+  </div>
+</div>

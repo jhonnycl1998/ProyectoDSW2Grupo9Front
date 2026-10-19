@@ -1,0 +1,140 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Roles</h1>
+      <p class="page-subtitle">Administración de perfiles y permisos de usuario</p>
+    </div>
+    <button 
+      *ngIf="authService.isAdmin()" 
+      class="btn-primary" 
+      (click)="abrirModalNuevo()"
+    >
+      <span>➕</span> Nuevo Rol
+    </button>
+  </div>
+
+  <div class="toast-success" *ngIf="successMessage">
+    <span>✅</span> {{ successMessage }}
+  </div>
+
+  <div class="toast-error" *ngIf="errorMessage">
+    <span>⚠️</span> {{ errorMessage }}
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">
+      <span class="spinner-large">⏳</span>
+      <p>Cargando roles...</p>
+    </div>
+
+    <table *ngIf="!isLoading && roles.length > 0" class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre del Rol</th>
+          <th>Tipo</th>
+          <th *ngIf="authService.isAdmin()" class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let rol of roles">
+          <td class="col-id">#{{ getRolId(rol) }}</td>
+          <td>
+            <strong class="role-title">🛡️ {{ rol.nombre }}</strong>
+          </td>
+          <td>
+            <span 
+              class="badge-type"
+              [class.badge-system]="isSystemRole(rol.nombre)"
+              [class.badge-custom]="!isSystemRole(rol.nombre)"
+            >
+              {{ isSystemRole(rol.nombre) ? 'Predeterminado del Sistema' : 'Personalizado' }}
+            </span>
+          </td>
+          <td *ngIf="authService.isAdmin()" class="text-right col-actions">
+            <button 
+              *ngIf="!isSystemRole(rol.nombre)"
+              class="btn-icon btn-edit" 
+              (click)="abrirModalEditar(rol)" 
+              title="Editar"
+            >
+              ✏️
+            </button>
+            <button 
+              *ngIf="!isSystemRole(rol.nombre)"
+              class="btn-icon btn-delete" 
+              (click)="confirmarEliminar(rol)" 
+              title="Eliminar"
+            >
+              🗑️
+            </button>
+            <span *ngIf="isSystemRole(rol.nombre)" class="badge-protected" title="Rol protegido del sistema">
+              🔒 Protegido
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!isLoading && roles.length === 0" class="empty-state">
+      <div class="empty-icon">🛡️</div>
+      <h3>No hay roles registrados</h3>
+      <p>Haga clic en "Nuevo Rol" para agregar un perfil.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Registro / Edición -->
+<div class="modal-backdrop" *ngIf="showModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>{{ isEditMode ? '✏️ Editar Rol' : '➕ Nuevo Rol' }}</h3>
+      <button class="btn-close" (click)="cerrarModal()">✖</button>
+    </div>
+
+    <form (ngSubmit)="guardarRol()" class="modal-form">
+      <div class="alert-error" *ngIf="formError">
+        <span>⚠️</span> {{ formError }}
+      </div>
+
+      <div class="form-group">
+        <label for="rolNombre">Nombre del Rol *</label>
+        <input 
+          type="text" 
+          id="rolNombre" 
+          [(ngModel)]="formNombre" 
+          name="formNombre"
+          placeholder="Ej: SUPERVISOR, CAJERO..." 
+          style="text-transform: uppercase;"
+          required
+        />
+        <small class="field-hint">El nombre se guardará automáticamente en mayúsculas.</small>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-primary">
+          {{ isEditMode ? 'Guardar Cambios' : 'Registrar Rol' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal-backdrop" *ngIf="showDeleteModal">
+  <div class="modal-card modal-sm">
+    <div class="modal-header">
+      <h3 class="text-danger">⚠️ Confirmar Eliminación</h3>
+      <button class="btn-close" (click)="cancelarEliminar()">✖</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de que desea eliminar el rol <strong>{{ rolToDelete?.nombre }}</strong>?</p>
+      <p class="text-muted">No se podrá eliminar si existen usuarios que lo tengan asignado.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="cancelarEliminar()">Cancelar</button>
+      <button type="button" class="btn-danger" (click)="eliminarRol()">Eliminar</button>
+    </div>
+  </div>
+</div>
